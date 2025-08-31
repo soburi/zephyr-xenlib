@@ -9,6 +9,28 @@ config XEN_STORE_SRV
 	  Enable xenstore server library. It should be included
 	  if you are running Zephyr as Dom0.
 
+config XEN_STORE_CLI
+	bool "Enable XenStore client library"
+	help
+	  Enable a minimal XenStore client library for guests).
+	  Provides request/response helpers to issue XS_READ, XS_DIRECTORY
+	  and XS_WATCH commands over the XenStore rings.
+
+if XEN_STORE_CLI
+
+config XENSTORE_CLI_MSG_RING_SIZE
+    int "XenStore CLI thread ring size (bytes)"
+    default 16384
+    range 4096 262144
+    help
+      Size in bytes of the internal ring buffer used to queue
+      complete xsd_sockmsg frames for thread consumption via xsc_recv().
+      It should be at least sizeof(struct xsd_sockmsg) + XENSTORE_PAYLOAD_MAX
+      to hold a single maximum-sized frame. A power-of-two size is
+      recommended for optimal ring buffer behavior.
+
+endif
+
 config XEN_LIBFDT
 	bool "Enable libfdt support"
 	help
