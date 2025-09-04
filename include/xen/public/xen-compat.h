@@ -12,21 +12,19 @@
 
 #define __XEN_LATEST_INTERFACE_VERSION__ 0x00040e00
 
-#if defined(__XEN__) || defined(__XEN_TOOLS__)
-/* Xen is built with matching headers and implements the latest interface. */
-#define __XEN_INTERFACE_VERSION__ __XEN_LATEST_INTERFACE_VERSION__
-#elif defined(CONFIG_XEN_INTERFACE_VERSION)
-/* modification for zephyr: Define __XEN_TOOLS__ for supporting DOM0 */
+/* Modification for Zephyr: start */
+#if defined(CONFIG_XEN)
 #define __XEN_TOOLS__
-
-/* modification for zephyr: If a version is specified explicitly, it will be used. */
-#define __XEN_INTERFACE_VERSION__ CONFIG_XEN_INTERFACE_VERSION
-
-/* modification for zephyr: Add common definitions. */
 #if !defined(_ASMLANGUAGE)
 #include <stdbool.h>
 #include <stdint.h>
 #endif
+#endif
+/* Modification for Zephyr: end */
+
+#if defined(__XEN__) || defined(__XEN_TOOLS__)
+/* Xen is built with matching headers and implements the latest interface. */
+#define __XEN_INTERFACE_VERSION__ __XEN_LATEST_INTERFACE_VERSION__
 #elif !defined(__XEN_INTERFACE_VERSION__)
 /* Guests which do not specify a version get the legacy interface. */
 #define __XEN_INTERFACE_VERSION__ 0x00000000
