@@ -11,16 +11,17 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <xen/public/hvm/params.h>
+#include <xen/public/io/xs_wire.h>
+
 #include <zephyr/init.h>
 #include <zephyr/xen/events.h>
-#include <zephyr/xen/public/hvm/params.h>
 #include <zephyr/xen/hvm.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/barrier.h>
 
 #include <mem-mgmt.h>
 #include "domain.h"
-#include "xen/public/io/xs_wire.h"
 #include "xenstore_srv.h"
 #include "xss.h"
 
