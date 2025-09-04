@@ -66,7 +66,7 @@ static int _vch_notify(struct vch_handle *h, int rw)
 
 	val = __atomic_fetch_and(target, ~rw, __ATOMIC_SEQ_CST);
 	if (val & rw) {
-		return notify_evtchn(h->evtch);
+		notify_evtchn(h->evtch);
 	}
 	return 0;
 }
@@ -242,6 +242,7 @@ int vch_connect(domid_t domain, const char *path, struct vch_handle *h)
 	evtchn_port_t remote_port;
 	char xs_key_scratch[MAX_XS_KEY_LEN] = { 0 };
 	struct gnttab_map_grant_ref map;
+	struct gnttab_unmap_grant_ref unmap;
 
 	if (!h || !path) {
 		return -EINVAL;
@@ -289,7 +290,7 @@ int vch_connect(domid_t domain, const char *path, struct vch_handle *h)
 
 	h->evtch = rc;
 
-	h->ring = (struct vchan_interface *)gnttab_get_page();
+	h->ring = (struct vchan_interface *)gnttab_get_pages(1);
 	if (!h->ring) {
 		rc = -ENOMEM;
 		goto free_evtch;
@@ -314,6 +315,7 @@ int vch_connect(domid_t domain, const char *path, struct vch_handle *h)
 	h->read = &h->ring->right;
 	h->write = &h->ring->left;
 	h->gref = ring_gref;
+	h->ghandle = map.handle;
 	h->ring->cli_live = CLIENT_CONNECTED;
 	h->ring->srv_notify = VCHAN_NOTIFY_WRITE;
 	rc = unmask_event_channel(h->evtch);
@@ -321,16 +323,17 @@ int vch_connect(domid_t domain, const char *path, struct vch_handle *h)
 		goto free_gnt;
 	}
 
-	rc = notify_evtchn(h->evtch);
-	if (rc) {
-		goto free_gnt;
-	}
+	notify_evtchn(h->evtch);
+	//if (rc) {
+	//	goto free_gnt;
+	//}
 
 	return 0;
 
 free_gnt:
-	gnttab_unmap_refs(&map, 1);
-	gnttab_put_page(h->ring);
+	unmap.handle = map.handle;
+	gnttab_unmap_refs(&unmap, 1);
+	gnttab_put_pages(h->ring, 1);
 free_evtch:
 	unbind_event_channel(h->evtch);
 	memset(h, 0, sizeof(*h));
@@ -339,7 +342,7 @@ free_evtch:
 
 void vch_close(struct vch_handle *h)
 {
-	struct gnttab_map_grant_ref map;
+	struct gnttab_unmap_grant_ref unmap;
 
 	if (!h) {
 		return;
@@ -355,11 +358,9 @@ void vch_close(struct vch_handle *h)
 		gnttab_end_access(h->gref);
 		k_free(h->ring);
 	} else {
-		map.host_addr = xen_to_phys(h->ring);
-		map.ref = h->gref;
-		map.flags = GNTMAP_host_map;
-		gnttab_unmap_refs(&map, 1);
-		gnttab_put_page(h->ring);
+		unmap.handle = h->ghandle;
+		gnttab_unmap_refs(&unmap, 1);
+		gnttab_put_pages(h->ring, 1);
 	}
 	memset(h, 0, sizeof(*h));
 }

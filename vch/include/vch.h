@@ -9,9 +9,9 @@
 #define XENLIB_VCH_H
 
 #include <zephyr/xen/generic.h>
-#include <zephyr/xen/public/event_channel.h>
-#include <zephyr/xen/public/grant_table.h>
-#include <zephyr/xen/public/xen.h>
+#include <xen/public/event_channel.h>
+#include <xen/public/grant_table.h>
+#include <xen/public/xen.h>
 
 #include "xen/public/io/libxenvchan.h"
 
@@ -22,6 +22,7 @@ extern "C" {
 struct vch_handle {
 	evtchn_port_t evtch;
 	grant_ref_t gref;
+	grant_handle_t ghandle;
 	bool blocking;
 	struct k_sem sem;
 	bool is_server;
