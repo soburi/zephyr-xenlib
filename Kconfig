@@ -9,6 +9,34 @@ config XEN_STORE_SRV
 	  Enable xenstore server library. It should be included
 	  if you are running Zephyr as Dom0.
 
+config XEN_STORE_CLI
+	bool "Enable XenStore client library"
+	default y
+	help
+	  Enable a minimal XenStore client library for guests).
+	  Provides request/response helpers to issue XS_READ, XS_DIRECTORY
+	  and XS_WATCH commands over the XenStore rings.
+
+config XENSTORE_CLI_WORKQ_PRIORITY
+	int "XenStore CLI workqueue priority"
+	depends on XEN_STORE_CLI
+	default 0
+	help
+	  Thread priority used to start the xenstore-cli workqueue
+	  (passed to k_work_queue_start). Lower numbers are higher
+	  priority. Use 0 unless you need to boost/deboost xenstore
+	  processing relative to the rest of the system.
+
+config XENSTORE_CLI_WORKQ_STACK_SIZE
+	int "XenStore CLI workqueue stack size (bytes)"
+	depends on XEN_STORE_CLI
+	default 32768
+	range 1024 262144
+	help
+	  Stack size for the xenstore-cli workqueue thread. Increase if
+	  you enable very verbose logging or heavy callbacks in the
+	  xenstore paths. 32 KiB is a safe default for most cases.
+
 config XEN_LIBFDT
 	bool "Enable libfdt support"
 	help
