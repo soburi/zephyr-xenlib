@@ -9,6 +9,10 @@ if(CONFIG_XEN)
   zephyr_include_directories(${XEN_DIR}/include)
 endif()
 
+if (CONFIG_XEN_STORE_SRV)
+  add_subdirectory(xenstore-common)
+endif()
+
 add_subdirectory_ifdef(CONFIG_XEN_STORE_SRV xenstore-srv)
 add_subdirectory_ifdef(CONFIG_XEN_DOMAIN_MANAGEMENT xen-dom-mgmt)
 add_subdirectory_ifdef(CONFIG_XEN_SHELL xen-shell-cmd)
