@@ -7,6 +7,10 @@ set(ZEPHYR_XENLIB_DIR ${ZEPHYR_CURRENT_MODULE_DIR})
 
 zephyr_include_directories_ifdef(CONFIG_XEN ${ZEPHYR_XENLIB_DIR}/include)
 
+if (CONFIG_XEN_STORE_SRV)
+  add_subdirectory(xenstore-common)
+endif()
+
 add_subdirectory_ifdef(CONFIG_XEN_STORE_SRV xenstore-srv)
 add_subdirectory_ifdef(CONFIG_XEN_DOMAIN_MANAGEMENT xen-dom-mgmt)
 add_subdirectory_ifdef(CONFIG_XEN_SHELL xen-shell-cmd)
