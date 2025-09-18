@@ -9,6 +9,14 @@ config XEN_STORE_SRV
 	  Enable xenstore server library. It should be included
 	  if you are running Zephyr as Dom0.
 
+config XEN_STORE_CLI
+	bool "Enable XenStore client library"
+	default y
+	help
+	  Enable a minimal XenStore client library for guests).
+	  Provides request/response helpers to issue XS_READ, XS_DIRECTORY
+	  and XS_WATCH commands over the XenStore rings.
+
 config XEN_LIBFDT
 	bool "Enable libfdt support"
 	help
