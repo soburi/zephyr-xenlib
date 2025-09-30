@@ -26,6 +26,7 @@ if XEN_STORE_CLI
 config XENSTORE_CLI_WORKQ_PRIORITY
 	int "XenStore CLI workqueue priority"
 	depends on XEN_STORE_CLI
+	default 0
 	help
 	  Thread priority for the xenstore-cli workqueue.
 
