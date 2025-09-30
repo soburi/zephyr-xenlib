@@ -65,9 +65,6 @@ struct xenstore_client {
 	uint8_t notify_frame[XENSTORE_PAYLOAD_MAX + 1];
 	struct xenstore_response notify;
 
-	atomic_t watch_walkers;       /* number of active notify deliveries */
-	struct k_sem watch_quiescent; /* signaled when walkers drops to 0 */
-
 	K_KERNEL_STACK_MEMBER(workq_stack, CONFIG_XENSTORE_CLI_WORKQ_STACK_SIZE);
 	struct k_work event_work;
 	struct k_work_q workq;
@@ -80,7 +77,7 @@ static inline uint32_t alloc_req_id(void)
 {
 	uint32_t id = (atomic_inc(&xs_cli.next_req_id) & UINT32_MAX);
 
-	/* req_id = 0 は watch通知で使われる */
+	/* id=0 is reserved for watch notification */
 	if (id == 0) {
 		id = (atomic_inc(&xs_cli.next_req_id) & UINT32_MAX);
 	}
@@ -337,17 +334,12 @@ static void finalize_response(struct xenstore_client *xs, struct xenstore_respon
 			}
 		}
 
-		atomic_inc(&xs->watch_walkers);
 		SYS_SLIST_FOR_EACH_NODE(&xs->notify_list, node) {
 			struct xs_watcher *w = CONTAINER_OF(node, struct xs_watcher, node);
 
 			if (w->cb) {
 				w->cb(path, token, w->param);
 			}
-		}
-
-		if (atomic_dec(&xs->watch_walkers) == 1) {
-			k_sem_give(&xs->watch_quiescent);
 		}
 
 		xs->notify.pos = 0;
@@ -541,7 +533,6 @@ int xs_init(void)
 	}
 
 	atomic_set(&xs_cli.next_req_id, 1);
-	atomic_set(&xs_cli.watch_walkers, 0);
 	xs_cli.workq_priority = CONFIG_XENSTORE_CLI_WORKQ_PRIORITY;
 
 	k_work_init(&xs_cli.event_work, event_work_handler);
@@ -551,7 +542,6 @@ int xs_init(void)
 
 	sys_slist_init(&xs_cli.notify_list);
 	sys_slist_init(&xs_cli.resp_list);
-	k_sem_init(&xs_cli.watch_quiescent, 0, 1);
 
 	err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, DOMID_SELF, &value);
 	if (err) {
@@ -597,45 +587,6 @@ void xs_watcher_init(struct xs_watcher *w, xs_watch_cb cb, void *param)
 	w->param = param;
 }
 
-int xs_shutdown_timeout(k_timeout_t timeout)
-{
-	k_spinlock_key_t key;
-	struct k_work_sync sync;
-	int err = 0;
-
-	if (!xs_cli.domint) {
-		return 0;
-	}
-
-	mask_event_channel(xs_cli.local_evtchn);
-	(void)k_work_flush(&xs_cli.event_work, &sync);
-
-	/* Wait for in-flight watch deliveries to quiesce */
-	if (atomic_get(&xs_cli.watch_walkers) > 0) {
-		err = k_sem_take(&xs_cli.watch_quiescent, timeout);
-		if (err != 0) {
-			unmask_event_channel(xs_cli.local_evtchn);
-			return -EBUSY;
-		}
-	}
-
-	unbind_event_channel(xs_cli.local_evtchn);
-
-	key = k_spin_lock(&xs_cli.lock);
-	sys_slist_init(&xs_cli.notify_list);
-	sys_slist_init(&xs_cli.resp_list);
-	k_spin_unlock(&xs_cli.lock, key);
-
-	xs_cli.domint = NULL;
-
-	return 0;
-}
-
-int xs_shutdown(void)
-{
-	return xs_shutdown_timeout(xs_cli.default_timeout);
-}
-
 int xs_watcher_register(struct xs_watcher *w)
 {
 	k_spinlock_key_t key;
@@ -649,50 +600,6 @@ int xs_watcher_register(struct xs_watcher *w)
 	k_spin_unlock(&xs_cli.lock, key);
 
 	return 0;
-}
-
-int xs_watcher_unregister_timeout(struct xs_watcher *w, k_timeout_t timeout)
-{
-	k_spinlock_key_t key;
-	bool removed;
-	int err;
-
-	if (!w) {
-		return -EINVAL;
-	}
-
-	key = k_spin_lock(&xs_cli.lock);
-	removed = sys_slist_find_and_remove(&xs_cli.notify_list, &w->node);
-	if (removed) {
-		w->node.next = NULL;
-	}
-	k_spin_unlock(&xs_cli.lock, key);
-
-	if (!removed) {
-		return -ENOENT;
-	}
-
-	/*
-	 * If callbacks are still running, block until they finish.  A timeout means we
-	 * must re-queue the watcher, otherwise future notifications would be dropped.
-	 * New deliveries that start after removal will not see this watcher.
-	 */
-	if (atomic_get(&xs_cli.watch_walkers) > 0) {
-		err = k_sem_take(&xs_cli.watch_quiescent, timeout);
-		if (err != 0) {
-			key = k_spin_lock(&xs_cli.lock);
-			sys_slist_append(&xs_cli.notify_list, &w->node);
-			k_spin_unlock(&xs_cli.lock, key);
-			return -EBUSY;
-		}
-	}
-
-	return 0;
-}
-
-int xs_watcher_unregister(struct xs_watcher *w)
-{
-	return xs_watcher_unregister_timeout(w, xs_cli.default_timeout);
 }
 
 ssize_t xs_read_timeout(const char *path, char *buf, size_t len, k_timeout_t tout)

@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2023 EPAM Systems
+ * Copyright (c) 2025 TOKITA Hiroshi
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <xenstore_common.h>
 
 int xenstore_ring_write(struct xenstore_domain_interface *intf, const void *data, size_t len,
@@ -74,37 +81,5 @@ int xenstore_get_error(const char *errstr, size_t len)
 		}
 	}
 
-	return EINVAL;
-}
-
-/* Iterate over NUL-separated string list (double-NUL terminated)
- * Usage:
- *   size_t off = 0; const char *entry;
- *   while ((off = xs_strlist_next(buf, len, off, &entry)) != 0) {
- *       // use entry
- *   }
- */
-size_t xenstore_strlist_next(const char *list, size_t len, size_t off, const char **out)
-{
-	if (!list || !out || off >= len) {
-		return 0;
-	}
-
-	const char *p = list + off;
-
-	if (*p == '\0') {
-		return 0; /* double-NUL reached */
-	}
-
-	*out = p;
-	size_t i = off;
-
-	while (i < len && list[i] != '\0') {
-		i++;
-	}
-	if (i >= len) {
-		return 0;
-	}
-	/* move past NUL; if next is NUL too, caller will stop on next call */
-	return i + 1;
+	return 0;
 }

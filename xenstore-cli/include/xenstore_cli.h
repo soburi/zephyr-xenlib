@@ -46,29 +46,16 @@ struct xs_watcher {
 };
 
 /**
- * @brief Initialize the xenstore client.
+ * @brief Initialize the XenStore client.
  *
  * Maps the XenStore shared rings, binds the event channel, and starts the
  * worker queue that processes ring notifications. Subsequent calls are
  * idempotent once initialization succeeds.
  *
  * @retval 0       Initialization succeeded or was already active.
- * @retval -errno  Underlying failure (mapping parameters, event binding, etc.).
+ * @retval -errno  Underlying failure (ring mapping, event binding, queue init, etc.).
  */
 int xs_init(void);
-
-/**
- * @brief Tear down the xenstore client.
- *
- * Flushes pending work, waits for in-flight watch callbacks to quiesce
- * (using the timeout configured via xs_set_default_timeout()), and unbinds
- * the event channel.
- *
- * @retval 0      Shutdown completed successfully.
- * @retval -EBUSY Timed out waiting for watch callbacks to finish.
- * @retval -errno Unbinding or cleanup failed.
- */
-int xs_shutdown(void);
 
 /**
  * @brief Prepare a watcher descriptor prior to registration.
@@ -76,44 +63,18 @@ int xs_shutdown(void);
  * @param w     Watcher descriptor to initialize (must not be NULL).
  * @param cb    Callback invoked for watch notifications (must not be NULL).
  * @param param User pointer passed to the callback on each notification.
- *
- * @return void.
  */
 void xs_watcher_init(struct xs_watcher *w, xs_watch_cb cb, void *param);
 
 /**
  * @brief Register a watcher callback.
  *
- * @param w Watcher descriptor previously initialised with xs_watcher_init().
+ * @param w Watcher descriptor previously initialized with xs_watcher_init().
  *
  * @retval 0      Success.
- * @retval -EINVAL Descriptor or callback was NULL.
+ * @retval -EINVAL Watcher descriptor or callback was NULL.
  */
 int xs_watcher_register(struct xs_watcher *w);
-
-/**
- * @brief Unregister a watcher with an explicit timeout.
- *
- * @param w    Watcher descriptor to unregister (must not be NULL).
- * @param tout Timeout to wait for in-flight callbacks; use K_FOREVER to wait
- *             indefinitely.
- *
- * @retval 0      Success.
- * @retval -EBUSY Wait timed out; watcher remains registered.
- * @retval -errno Other error conditions.
- */
-int xs_watcher_unregister_timeout(struct xs_watcher *w, k_timeout_t tout);
-
-/**
- * @brief Unregister a watcher using the client-wide default timeout.
- *
- * @param w Watcher descriptor to unregister (must not be NULL).
- *
- * @retval 0      Success.
- * @retval -EBUSY Wait timed out; watcher remains registered.
- * @retval -errno Other error conditions.
- */
-int xs_watcher_unregister(struct xs_watcher *w);
 
 /**
  * @brief Read a XenStore path with an explicit timeout.
@@ -149,12 +110,11 @@ ssize_t xs_directory_timeout(const char *path, char *buf, size_t len, k_timeout_
  *
  * @param path   Absolute path to watch (must not be NULL).
  * @param token  Optional user token (must not be NULL, may point to an empty string).
- * @param buf    Destination buffer for the initial watch response (may be NULL).
- * @param len    Length of @p buf in bytes when @p buf is non-NULL.
+ * @param buf    Destination buffer for the initial watch response (must not be NULL).
+ * @param len    Length of @p buf in bytes (must be > 0).
  * @param tout   Timeout to wait for the response.
  *
- * @retval >=0   Number of bytes copied into @p buf (excluding terminator) or 0 when
- *               @p buf is NULL.
+ * @retval >=0   Number of bytes copied into @p buf (excluding terminator).
  * @retval -EINVAL Invalid arguments.
  * @retval -errno  Transport or protocol error.
  */
@@ -188,8 +148,8 @@ ssize_t xs_directory(const char *path, char *buf, size_t len);
  *
  * @param path   Absolute path to watch (must not be NULL).
  * @param token  Optional user token (must not be NULL).
- * @param buf    Destination buffer for the initial response (may be NULL).
- * @param len    Length of @p buf in bytes when @p buf is non-NULL.
+ * @param buf    Destination buffer for the initial response (must not be NULL).
+ * @param len    Length of @p buf in bytes (must be > 0).
  *
  * @return See xs_watch_timeout().
  */
