@@ -85,52 +85,55 @@ int xs_watcher_register(struct xs_watcher *w);
 /**
  * @brief Read a XenStore path.
  *
- * @param path   The path to read the value.
- * @param buf    A string buffer to store the result.
- * @param len    The length of @p buf in bytes.
- * @param tout   Timeout to wait for the response; use K_FOREVER to block
- *               indefinitely.
+ * @param path     The path to read the value.
+ * @param buf      A string buffer to store the result.
+ * @param len      The length of @p buf in bytes.
+ * @param tout     Timeout to wait for the response; use K_FOREVER to block
+ *                 indefinitely.
  *
- * @retval >=0   Number of bytes copied into @p buf (excluding the terminator).
- * @retval -errno  Failed to read.
+ * @retval >=0     Number of bytes copied into @p buf (terminator excluded).
+ * @retval -errno  Request failed.
  */
 ssize_t xs_read_timeout(const char *path, char *buf, size_t len, k_timeout_t tout);
 
 /**
  * @brief Enumerate a XenStore directory.
  *
- * @param path   The absolute directory path to enumerate.
- * @param buf    A buffer to store the result.
- *               The directory-entries are returned as a byte sequence of
- *               NUL-separated strings.
- * @param len    The length of @p buf in bytes.
- * @param tout   Timeout to wait for the response.
+ * @param path     The absolute directory path to enumerate.
+ * @param buf      A buffer to store the result.
+ *                 The directory-entries are returned as a byte sequence of
+ *                 NUL-separated strings.
+ * @param len      The length of @p buf in bytes.
+ * @param tout     Timeout to wait for the response.
  *
- * @retval >=0   Number of bytes copied into @p buf (terminator excluded).
- * @retval -errno Request failed (e.g. -ETIMEDOUT, -ENOENT, -EIO).
+ * @retval >=0     Number of bytes copied into @p buf (terminator excluded).
+ * @retval -errno  Request failed.
  */
 ssize_t xs_directory_timeout(const char *path, char *buf, size_t len, k_timeout_t tout);
 
 /**
  * @brief Start to watch the XenStore value changes.
  *
- * @param path   The absolute path to watch.
- * @param token  A user token to identify watch request.
- * @param buf    A buffer to store the result.
- * @param len    The length of @p buf in bytes.
- * @param tout   Timeout to wait for the response.
+ * @param path     The absolute path to watch.
+ * @param token    A user token to identify watch request.
+ * @param buf      A buffer to store the result.
+ * @param len      The length of @p buf in bytes.
+ * @param tout     Timeout to wait for the response.
  *
- * @retval >=0   Number of bytes copied into @p buf (terminator excluded).
- * @retval -errno  Request failed (e.g. -ETIMEDOUT, -EIO).
+ * @retval >=0     Number of bytes copied into @p buf (terminator excluded).
+ * @retval -errno  Request failed.
  */
 ssize_t xs_watch_timeout(const char *path, const char *token, char *buf, size_t len,
 			 k_timeout_t tout);
 /**
  * @brief Read a XenStore path with the default timeout.
  *
- * @param path   The path to read the value.
- * @param buf    A string buffer to store the result.
- * @param len    The length of @p buf in bytes.
+ * @param path     The path to read the value.
+ * @param buf      A string buffer to store the result.
+ * @param len      The length of @p buf in bytes.
+ *
+ * @retval >=0     Number of bytes copied into @p buf (terminator excluded).
+ * @retval -errno  Request failed.
  *
  * @see xs_read_timeout().
  */
@@ -139,9 +142,12 @@ ssize_t xs_read(const char *path, char *buf, size_t len);
 /**
  * @brief Enumerate a XenStore directory with the default timeout.
  *
- * @param path   The directory path to enumerate.
- * @param buf    A string buffer to store the result.
- * @param len    The length of @p buf in bytes.
+ * @param path     The directory path to enumerate.
+ * @param buf      A string buffer to store the result.
+ * @param len      The length of @p buf in bytes.
+ *
+ * @retval >=0     Number of bytes copied into @p buf (terminator excluded).
+ * @retval -errno  Request failed.
  *
  * @see xs_directory_timeout().
  */
@@ -150,10 +156,13 @@ ssize_t xs_directory(const char *path, char *buf, size_t len);
 /**
  * @brief Start to watch the XenStore value changes with the default timeout.
  *
- * @param path   Absolute path to watch.
- * @param token  A user token to identify watch request.
- * @param buf    A string buffer to store the result.
- * @param len    The length of @p buf in bytes.
+ * @param path     Absolute path to watch.
+ * @param token    A user token to identify watch request.
+ * @param buf      A string buffer to store the result.
+ * @param len      The length of @p buf in bytes.
+ *
+ * @retval >=0     Number of bytes copied into @p buf (terminator excluded).
+ * @retval -errno  Request failed.
  *
  * @see xs_watch_timeout().
  */
