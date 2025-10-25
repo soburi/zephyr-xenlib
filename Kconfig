@@ -39,6 +39,27 @@ config XENSTORE_CLI_WORKQ_STACK_SIZE
 
 endif
 
+config XENSTORE_CLI_SHELL_CMDS
+	depends on SHELL
+	depends on XEN_STORE_CLI
+	bool "Enable XenStore cleint shell"
+	help
+	  Enable XenStore client shell.
+
+config XENSTORE_SRV_SHELL_CMDS
+	depends on SHELL
+	depends on XEN_STORE_SRV
+	bool "Enable XenStore cleint shell"
+	help
+	  Enable XenStore client shell.
+
+config XEN_DOMAIN_MANAGEMENT_SHELL_CMDS
+	depends on SHELL
+	depends on XEN_DOMAIN_MANAGEMENT
+	bool "Enable XenStore cleint shell"
+	help
+	  Enable XenStore client shell.
+
 config XEN_LIBFDT
 	bool "Enable libfdt support"
 	help
