@@ -16,8 +16,6 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(xenstore_shell, CONFIG_LOG_DEFAULT_LEVEL);
 
-char buffer[XENSTORE_PAYLOAD_MAX + 1];
-
 /**
  * Get the nth string from a null-separated string buffer
  */
@@ -45,8 +43,9 @@ static const char *xenstore_next_str(const char *current, const char *buf, size_
 static int cmd_xenstore_list(const struct shell *sh, size_t argc, char **argv)
 {
 	bool show_path = false;
-	bool show_help = true;
+	bool show_help = false;
 	size_t idx = 1;
+	char *buffer;
 
 	while (idx < argc) {
 		if (strncmp(argv[idx], "-p", 2) == 0) {
@@ -64,6 +63,8 @@ static int cmd_xenstore_list(const struct shell *sh, size_t argc, char **argv)
 		shell_help(sh);
 		return 0;
 	}
+
+	buffer = k_malloc(XENSTORE_PAYLOAD_MAX + 1);
 
 	for (; idx < argc; idx++) {
 		const ssize_t resp_len = xs_directory(argv[idx], buffer, XENSTORE_PAYLOAD_MAX, 0);
@@ -85,13 +86,77 @@ static int cmd_xenstore_list(const struct shell *sh, size_t argc, char **argv)
 		}
 	}
 
+	k_free(buffer);
+
 	return 0;
 }
 
+static int cmd_xenstore_ls_recur(const struct shell *sh, const char *path, bool show_full_path, bool show_perms)
+{
+	char *buffer;
+	ssize_t resp_len;
+	const char *ptr = NULL;
+	int ret;
+
+	shell_print(sh, "path: %s", path);
+      
+	buffer = k_malloc(XENSTORE_PAYLOAD_MAX + 1);
+	resp_len = xs_directory(path, buffer, XENSTORE_PAYLOAD_MAX, 0);
+
+	if (resp_len < 0) {
+		shell_print(sh, "error: %s: %ld", path, resp_len);
+		return (int)resp_len;
+	}
+
+	buffer[resp_len] = '\0';
+	while ((ptr = xenstore_next_str(ptr, buffer, resp_len))) {
+		char path_buf[255] = {0};
+
+		strcat(path_buf, path);
+		strcat(path_buf, "/");
+		strcat(path_buf, ptr);
+
+		ret = cmd_xenstore_ls_recur(sh, path_buf, show_full_path, show_perms);
+	}
+
+	return 0;
+}
+
+static int cmd_xenstore_ls(const struct shell *sh, size_t argc, char **argv)
+{
+	bool show_full_path = false;
+	bool show_perms = false;
+	bool show_help = false;
+	size_t idx = 1;
+
+	while (idx < argc) {
+		if (strncmp(argv[idx], "-f", 2) == 0) {
+			show_full_path = true;
+		} else if (strncmp(argv[idx], "-p", 2) == 0) {
+			show_perms = true;
+		} else if (strncmp(argv[idx], "-h", 2) == 0) {
+			show_help = true;
+		} else {
+			break;
+		}
+
+		idx++;
+	}
+
+	if (show_help || idx == argc) {
+		shell_help(sh);
+		return 0;
+	}
+
+	return cmd_xenstore_ls_recur(sh, argv[idx], show_full_path, show_perms);
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_xenstore_cmds,
-			       SHELL_CMD_ARG(list, NULL, "Usage: xenstore list [-h] [-p] key [...]",
+	SHELL_CMD_ARG(list, NULL, "Usage: xenstore list [-h] [-p] key [...]",
 					     cmd_xenstore_list, 1, UINT8_MAX),
-			       SHELL_SUBCMD_SET_END /* Array terminated. */
+	SHELL_CMD_ARG(ls, NULL, "Usage: xenstore ls [-h] [-f] [-p] path",
+					     cmd_xenstore_ls, 1, 3),
+	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 
 SHELL_CMD_REGISTER(xenstore, &sub_xenstore_cmds, "XenStore client commands", NULL);
