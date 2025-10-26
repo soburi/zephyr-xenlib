@@ -813,22 +813,6 @@ ssize_t xs_read(const char *path, char *buf, size_t len, uint32_t tx_id)
 	return xs_read_timeout(path, buf, len, tx_id, xs_cli.default_timeout);
 }
 
-ssize_t xs_write_timeout(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout)
-{
-	const char *const params[] = {path, value};
-
-	if (!path || !buf || len == 0) {
-		return -EINVAL;
-	}
-
-	return execute_request(&xs_cli, XS_WRITE, params, ARRAY_SIZE(params), buf, len, tx_id, tout);
-}
-
-ssize_t xs_write(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id)
-{
-	return xs_write_timeout(path, value, buf, len, tx_id, xs_cli.default_timeout);
-}
-
 ssize_t xs_rm_timeout(const char *path, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout)
 {
 	const char *const params[] = {path};
@@ -861,6 +845,43 @@ ssize_t xs_directory_timeout(const char *path, char *buf, size_t len, uint32_t t
 ssize_t xs_directory(const char *path, char *buf, size_t len, uint32_t tx_id)
 {
 	return xs_directory_timeout(path, buf, len, tx_id, xs_cli.default_timeout);
+}
+
+ssize_t xs_write_timeout(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout)
+{
+	const char *const params[] = {path, value};
+
+	if (!path || !buf || len == 0) {
+		return -EINVAL;
+	}
+
+	return execute_request(&xs_cli, XS_WRITE, params, ARRAY_SIZE(params), buf, len, tx_id, tout);
+}
+
+ssize_t xs_write(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id)
+{
+	return xs_write_timeout(path, value, buf, len, tx_id, xs_cli.default_timeout);
+}
+
+ssize_t xs_set_permissions_timeout(const char *path, const char **perms, size_t perms_num, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout)
+{
+//CONFIG_XENSTORE_CLI_MAX_PERMS
+	const char * params[5] = {path};
+
+	for (size_t i=0; i<perms_num; i++) {
+		params[i+1] = perms[0];
+	}
+
+	if (!path || !buf || len == 0) {
+		return -EINVAL;
+	}
+
+	return execute_request(&xs_cli, XS_SET_PERMS, (const char * const*)params, ARRAY_SIZE(params), buf, len, tx_id, tout);
+}
+
+ssize_t xs_set_permissions(const char *path, const char **perms, size_t perms_num, char *buf, size_t len, uint32_t tx_id)
+{
+	return xs_set_permissions_timeout(path, perms, perms_num, buf, len, tx_id, xs_cli.default_timeout);
 }
 
 ssize_t xs_watch_timeout(const char *path, const char *token, char *buf, size_t len, uint32_t tx_id,
