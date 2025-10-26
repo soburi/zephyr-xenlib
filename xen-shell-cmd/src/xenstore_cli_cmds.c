@@ -91,20 +91,12 @@ static int cmd_xenstore_list(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-static char* space[] = {
-	"",
-	" ",
-	"  ",
-	"   ",
-	"    ",
-	"     ",
-	"      ",
-	"       ",
-	"        ",
-	"         ",
+static char *space[] = {
+	"", " ", "  ", "   ", "    ", "     ", "      ", "       ", "        ", "         ",
 };
 
-static int cmd_xenstore_ls_recur(const struct shell *sh, size_t level, const char *path, bool show_full_path, bool show_perms)
+static int cmd_xenstore_ls_recur(const struct shell *sh, size_t level, const char *path,
+				 bool show_full_path, bool show_perms)
 {
 	char *buffer;
 	ssize_t resp_len;
@@ -180,11 +172,63 @@ static int cmd_xenstore_ls(const struct shell *sh, size_t argc, char **argv)
 	return cmd_xenstore_ls_recur(sh, 0, argv[idx], show_full_path, show_perms);
 }
 
+static int cmd_xenstore_read(const struct shell *sh, size_t argc, char **argv)
+{
+	bool show_path = false;
+	bool show_help = false;
+	bool show_raw = false;
+	size_t idx = 1;
+	char *buffer;
+
+	while (idx < argc) {
+		if (strncmp(argv[idx], "-p", 2) == 0) {
+			show_path = true;
+		} else if (strncmp(argv[idx], "-R", 2) == 0) {
+			show_raw = true;
+		} else if (strncmp(argv[idx], "-h", 2) == 0) {
+			show_help = true;
+		} else {
+			break;
+		}
+
+		idx++;
+	}
+
+	if (show_help || idx == argc) {
+		shell_help(sh);
+		return 0;
+	}
+
+	buffer = k_malloc(XENSTORE_PAYLOAD_MAX + 1);
+
+	for (; idx < argc; idx++) {
+		const char *path = argv[idx];
+		const ssize_t resp_len = xs_read(path, buffer, XENSTORE_PAYLOAD_MAX, 0);
+
+		if (resp_len < 0) {
+			shell_print(sh, "error: %s: %ld", path, resp_len);
+			continue;
+		}
+
+		if (show_path) {
+			shell_print(sh, "%s: %s", path, buffer);
+		} else {
+			shell_print(sh, "%s", buffer);
+		}
+	}
+
+	k_free(buffer);
+
+	return 0;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_xenstore_cmds,
 	SHELL_CMD_ARG(list, NULL, "Usage: xenstore list [-h] [-p] key [...]",
-					     cmd_xenstore_list, 1, UINT8_MAX),
+		      cmd_xenstore_list, 1, UINT8_MAX),
 	SHELL_CMD_ARG(ls, NULL, "Usage: xenstore ls [-h] [-f] [-p] path",
-					     cmd_xenstore_ls, 1, 3),
+		      cmd_xenstore_ls, 1, 3),
+	SHELL_CMD_ARG(read, NULL, "Usage: xenstore read [-h] [-p] [-R] path",
+		      cmd_xenstore_read, 1, UINT8_MAX),
 	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 
