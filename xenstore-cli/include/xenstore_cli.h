@@ -99,6 +99,7 @@ int xs_watcher_register(struct xs_watcher *w);
  * @retval -errno  Request failed.
  */
 ssize_t xs_read_timeout(const char *path, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout);
+ssize_t xs_rm_timeout(const char *path, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout);
 
 ssize_t xs_write_timeout(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout);
 
@@ -148,6 +149,7 @@ ssize_t xs_watch_timeout(const char *path, const char *token, char *buf, size_t 
  * @see xs_read_timeout().
  */
 ssize_t xs_read(const char *path, char *buf, size_t len, uint32_t tx_id);
+ssize_t xs_rm(const char *path, char *buf, size_t len, uint32_t tx_id);
 
 ssize_t xs_write(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id);
 

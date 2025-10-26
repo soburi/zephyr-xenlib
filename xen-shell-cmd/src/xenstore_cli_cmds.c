@@ -266,6 +266,39 @@ static int cmd_xenstore_write(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
+static int cmd_xenstore_rm(const struct shell *sh, size_t argc, char **argv)
+{
+	bool tidy = false;
+	bool show_help = false;
+	size_t idx = 1;
+	ssize_t ret;
+
+	while (idx < argc) {
+		if (strncmp(argv[idx], "-t", 2) == 0) {
+			tidy = true;
+		} else if (strncmp(argv[idx], "-h", 2) == 0) {
+			show_help = true;
+		} else {
+			break;
+		}
+
+		idx++;
+	}
+
+	if (show_help || idx == argc) {
+		shell_help(sh);
+		return 0;
+	}
+
+	char *buffer = k_malloc(XENSTORE_PAYLOAD_MAX + 1);
+
+	ret = xs_rm(argv[idx], buffer, XENSTORE_PAYLOAD_MAX, 0);
+
+	k_free(buffer);
+
+	return ret;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_xenstore_cmds,
 	SHELL_CMD_ARG(list, NULL, "Usage: xenstore list [-h] [-p] key [...]",
 		      cmd_xenstore_list, 1, UINT8_MAX),
@@ -275,6 +308,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_xenstore_cmds,
 		      cmd_xenstore_read, 1, UINT8_MAX),
 	SHELL_CMD_ARG(write, NULL, "Usage: xenstore write [-h] [-R] key value [...]",
 		      cmd_xenstore_write, 2, UINT8_MAX),
+	SHELL_CMD_ARG(rm, NULL, "Usage: xenstore rm [-h] [-t] key [...]",
+		      cmd_xenstore_rm, 1, UINT8_MAX),
 	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 

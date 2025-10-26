@@ -808,9 +808,9 @@ ssize_t xs_read_timeout(const char *path, char *buf, size_t len, uint32_t tx_id,
 	return execute_request(&xs_cli, XS_READ, params, ARRAY_SIZE(params), buf, len, tx_id, tout);
 }
 
-ssize_t xs_write(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id)
+ssize_t xs_read(const char *path, char *buf, size_t len, uint32_t tx_id)
 {
-	return xs_write_timeout(path, value, buf, len, tx_id, xs_cli.default_timeout);
+	return xs_read_timeout(path, buf, len, tx_id, xs_cli.default_timeout);
 }
 
 ssize_t xs_write_timeout(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout)
@@ -824,9 +824,25 @@ ssize_t xs_write_timeout(const char *path, const char *value, char *buf, size_t 
 	return execute_request(&xs_cli, XS_WRITE, params, ARRAY_SIZE(params), buf, len, tx_id, tout);
 }
 
-ssize_t xs_read(const char *path, char *buf, size_t len, uint32_t tx_id)
+ssize_t xs_write(const char *path, const char *value, char *buf, size_t len, uint32_t tx_id)
 {
-	return xs_read_timeout(path, buf, len, tx_id, xs_cli.default_timeout);
+	return xs_write_timeout(path, value, buf, len, tx_id, xs_cli.default_timeout);
+}
+
+ssize_t xs_rm_timeout(const char *path, char *buf, size_t len, uint32_t tx_id, k_timeout_t tout)
+{
+	const char *const params[] = {path};
+
+	if (!path || !buf || len == 0) {
+		return -EINVAL;
+	}
+
+	return execute_request(&xs_cli, XS_RM, params, ARRAY_SIZE(params), buf, len, tx_id, tout);
+}
+
+ssize_t xs_rm(const char *path, char *buf, size_t len, uint32_t tx_id)
+{
+	return xs_rm_timeout(path, buf, len, tx_id, xs_cli.default_timeout);
 }
 
 ssize_t xs_directory_timeout(const char *path, char *buf, size_t len, uint32_t tx_id,
