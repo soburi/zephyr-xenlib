@@ -251,6 +251,8 @@ static int cmd_xenstore_write(const struct shell *sh, size_t argc, char **argv)
 	for (; idx < argc; idx += 2) {
 		const char *path = argv[idx];
 		const char *value = argv[idx + 1];
+
+		shell_print(sh, "value=---%s---", value);
 		const ssize_t resp_len = xs_write(path, value, buffer, XENSTORE_PAYLOAD_MAX, 0);
 
 		if (resp_len < 0) {
