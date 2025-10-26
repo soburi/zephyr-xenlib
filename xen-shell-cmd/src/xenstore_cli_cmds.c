@@ -32,7 +32,7 @@ static const char *xenstore_next_str(const char *current, const char *buf, size_
 	}
 
 	for (size_t i = (current - buf) + 1; i < len; i++) {
-		if (buf[i] == '\0' && (i + 1) < len) {
+		if ((buf[i] == '\0') && ((i + 1) < len)) {
 			return &buf[i + 1];
 		}
 	}
@@ -91,34 +91,63 @@ static int cmd_xenstore_list(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-static int cmd_xenstore_ls_recur(const struct shell *sh, const char *path, bool show_full_path, bool show_perms)
+static char* space[] = {
+	"",
+	" ",
+	"  ",
+	"   ",
+	"    ",
+	"     ",
+	"      ",
+	"       ",
+	"        ",
+	"         ",
+};
+
+static int cmd_xenstore_ls_recur(const struct shell *sh, size_t level, const char *path, bool show_full_path, bool show_perms)
 {
 	char *buffer;
 	ssize_t resp_len;
 	const char *ptr = NULL;
 	int ret;
 
-	shell_print(sh, "path: %s", path);
-      
 	buffer = k_malloc(XENSTORE_PAYLOAD_MAX + 1);
 	resp_len = xs_directory(path, buffer, XENSTORE_PAYLOAD_MAX, 0);
 
 	if (resp_len < 0) {
 		shell_print(sh, "error: %s: %ld", path, resp_len);
+		k_free(buffer);
 		return (int)resp_len;
 	}
 
 	buffer[resp_len] = '\0';
 	while ((ptr = xenstore_next_str(ptr, buffer, resp_len))) {
+
+		if (strlen(ptr) == 0) {
+			continue;
+		}
+
 		char path_buf[255] = {0};
 
 		strcat(path_buf, path);
 		strcat(path_buf, "/");
 		strcat(path_buf, ptr);
 
-		ret = cmd_xenstore_ls_recur(sh, path_buf, show_full_path, show_perms);
+		char *read_buffer = k_malloc(XENSTORE_PAYLOAD_MAX + 1);
+		ssize_t read_len = xs_read(path_buf, read_buffer, XENSTORE_PAYLOAD_MAX, 0);
+
+		read_buffer[read_len] = '\0';
+
+		if (show_full_path) {
+			shell_print(sh, "%s/%s = \"%s\"", path, ptr, read_buffer);
+		} else {
+			shell_print(sh, "%s%s = \"%s\"", space[level], ptr, read_buffer);
+		}
+
+		ret = cmd_xenstore_ls_recur(sh, level + 1, path_buf, show_full_path, show_perms);
 	}
 
+	k_free(buffer);
 	return 0;
 }
 
@@ -148,7 +177,7 @@ static int cmd_xenstore_ls(const struct shell *sh, size_t argc, char **argv)
 		return 0;
 	}
 
-	return cmd_xenstore_ls_recur(sh, argv[idx], show_full_path, show_perms);
+	return cmd_xenstore_ls_recur(sh, 0, argv[idx], show_full_path, show_perms);
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_xenstore_cmds,
