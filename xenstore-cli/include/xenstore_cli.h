@@ -70,7 +70,7 @@ int xs_init(void);
  * @brief Set the default timeout for XenStore operations.
  *
  * Operations that do not take an explicit timeout parameter will use this value.
- * K_FOREVER is the default, causing the calling thread to block indefinitely.
+ * The default is K_FOREVER, to block indefinitely.
  *
  * @param tout  Default timeout to use for XenStore operations.
  */
